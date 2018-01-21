@@ -1,12 +1,13 @@
 const crypto = require('crypto');
 const argon2 = require('argon2');
-const Promise = require('bluebird');
 const mongoose = require('mongoose');
+const uniqueValidator = require('mongoose-unique-validator');
 const Schema = mongoose.Schema;
 
 const schema = new Schema({
   username: {
     type: String,
+    index: true,
     unique: true,
     required: true
   },
@@ -20,16 +21,7 @@ const schema = new Schema({
   }
 });
 
-schema.pre('validate', function(next) {
-  return this.constructor.count({ username: this.username }, function (err, count) {
-    if (err) { return next(err); }
-
-    if (count === 1) {
-      let err = new Error('`username` is not uniq');
-      next(err);
-    }
-  });
-});
+schema.plugin(uniqueValidator);
 
 schema.pre('validate', function(next) {
   let _this = this;
@@ -40,17 +32,26 @@ schema.pre('validate', function(next) {
   });
 });
 
+/**
+ * Generate token
+ * @requires {string}
+ */
 function gToken() {
   return crypto.randomBytes(32).toString('hex');
 }
 
+/**
+ * Generate password hash
+ * @param password
+ * @returns {string} - null if errors
+ */
 function gPassword(password) {
   if (!password) { return null; }
 
   return argon2.hash(password).then(hash => {
     return hash;
   }).catch(err => {
-    console.error(err);
+    log.error(err);
     return null;
   });
 }

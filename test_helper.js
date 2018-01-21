@@ -1,6 +1,5 @@
 require('dotenv').config();
-const clean = require('mongo-clean');
-const db = require('../config/database');
+const db = require('./config/database');
 let conn = null;
 
 before(function(done) {

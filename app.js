@@ -1,13 +1,19 @@
 require('dotenv').config();
+const logger = require('./config/logger');
 
-const auth = require('./app/services/auth');
-const User = require('./app/resources/user');
-const Session = require('./app/resources/session');
-const path = require('path');
 const express = require('express');
 const bodyParser = require('body-parser');
 const app = express();
 const port = process.env.PORT || 3000;
+
+if (!process.env.NODE_ENV) {
+  process.env.NODE_ENV = 'development';
+}
+
+const isProd = (process.env.NODE_ENV === 'production');
+const isDev = (process.env.NODE_ENV === 'development');
+
+global.Promise = require('bluebird');
 
 if (process.env.NODE_ENV !== 'test') {
   require('./config/database').connect();
@@ -21,36 +27,40 @@ if (process.env.NODE_ENV !== 'test') {
   app.use(cors(corsConf));
 }
 
+const auth = require('./app/services/auth');
 const authConf = {
   except: [{'GET': '/'}, {'POST': '/user'}, {'POST': '/user/sessions'}]
 };
-
-global.Promise = require('bluebird');
 
 // Middleware
 app.use(auth(authConf));
 app.use(bodyParser.json());
 
-if (process.env.NODE_ENV === 'production') {
-  // Log requests
-  const logger = require('morgan');
-  const fs = require('fs');
-  const logPath = path.join(__dirname, 'log');
-  const logStream = fs.createWriteStream(path.join(logPath, 'access.log'), {flags: 'a'});
+app.listen(port, () => console.log(`App starting on port ${port}\nEnvironment ${process.env.NODE_ENV}`));
 
-  app.use(logger('short', {stream: logStream}));
+if (isDev) {
+  app.use(function (req, res, next) {
+    console.log(`\n${req.method} ${req.url}\nparams: ${JSON.stringify(req.params)}\nbody: ${JSON.stringify(req.body)}`);
+    next();
+  });
+} else if (isProd) {
+  app.use(logger.accessLog);
 }
 
-app.listen(port, () => console.log(`App starting on port ${port}`));
-
 // Routes
-app.get('/', function (req, res) {
-  res.sendStatus(200);
+const routes = require('./config/routes');
+app.use(routes);
+
+if (isProd) {
+  app.use(logger.errorLog);
+}
+
+app.use(function (err, req, res) {
+  if (res.headersSent) {
+    return next(err)
+  }
+
+  res.status(500).json({error: 'Server error'});
 });
-
-app.post('/user', User.create);
-app.post('/user/sessions', Session.create);
-
-// node app.js >log-file.txt 2>error-file.txt
 
 module.exports = app;

@@ -38,11 +38,11 @@ describe('API /user', function() {
         chai.request(app).post('/user')
           .send(attr)
           .end(function (err, res) {
-            assert.match(res.body.errors, /`username` is not uniq/);
+            assert.match(res.body.errors, /expected `username` to be unique/);
             assert.equal(res.statusCode, 400);
             done();
           });
-        }).catch(err => { console.log(err) });
+        }).catch(err => { console.log(err); });
     });
   });
 });

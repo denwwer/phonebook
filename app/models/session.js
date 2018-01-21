@@ -7,19 +7,19 @@ class Session {
     this.password = password;
   }
 
+  /**
+   * Verify User password and return token
+   * @returns {Promise<token>}
+   */
   create() {
     const _this = this;
     const incorrect = new Error('Incorrect username or password');
 
     return new Promise((resolve, reject) => {
       User.findOne({username: this.username}).exec((err, user) => {
-        if (err) {
-          console.error(err);
-          reject(incorrect);
-        }
-
-        if (!user) {
-          reject(incorrect);
+        if (err || !user) {
+          if (err) { log.error(err); }
+          return reject(incorrect);
         }
 
         argon2.verify(user.password, _this.password).then(match => {

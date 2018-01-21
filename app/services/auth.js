@@ -7,10 +7,16 @@ const User = require('../models/user');
  */
 module.exports = function ({except}) {
   return function (req, res, next) {
-    if ((skip(except, req)) || authorized(req)) {
+    if (skip(except, req)) {
       next();
     } else {
-      res.sendStatus(401);
+      authorized(req)
+        .then(user => {
+          req.User = user;
+          next();
+        }).catch(() => {
+          res.status(401).json({});
+        });
     }
   };
 };
@@ -41,17 +47,18 @@ function skip(except, req) {
 /**
  * Check if user auth
  * @param {object} req
- * @returns {bool}
+ * @returns {object} - User Object
  */
 function authorized(req) {
-  const token = req.headers['Token'];
+  const token = req.headers.token;
+  const unAuth = new Error('Unauthorized');
 
-  if (!token) { return false; }
+  return new Promise((reselve, reject) => {
+    if (!token) { return reject(unAuth); }
 
-  const decoded = jwt.verify(token, process.env.JWT_SECRET);
-
-  User.find({ _id: decoded.id }, function (err, user) {
-    if (err) { return false; }
-    req.User = user;
+    User.findOne({ token: token }).select('-password').exec((err, user) => {
+      if (err || !user) { return reject(unAuth); }
+      reselve(user.toObject());
+    });
   });
 }

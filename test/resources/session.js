@@ -17,7 +17,7 @@ describe('API /user/session', function() {
       user.save().then((u) => {
         user = u;
         done();
-      }).catch(err => { console.log(err) });
+      }).catch(err => { console.log(err); });
     });
 
     it('should create session', function (done) {
@@ -34,7 +34,7 @@ describe('API /user/session', function() {
     it('user params in not valid', function (done) {
       chai.request(app)
         .post('/user/sessions')
-        .send({ username: 'user1', password: 'pass1' })
+        .send({ username: '', password: 'pass1' })
         .end(function (err, res) {
           assert.match(res.body.errors, /Incorrect username or password/);
           assert.equal(res.statusCode, 400);
