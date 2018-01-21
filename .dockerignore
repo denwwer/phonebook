@@ -1,0 +1,9 @@
+coverage
+.nyc_output
+log/*.log
+node_modules
+.git
+.idea
+.env
+.env.sample
+.jshintrc
