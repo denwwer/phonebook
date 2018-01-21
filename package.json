@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "description": "RESTful service",
   "main": "app.js",
+  "engines": {
+    "node": ">=v8.6.0"
+  },
   "scripts": {
     "test": "NODE_ENV=test nyc --reporter=html mocha test_helper.js test --recursive --exit --timeout=3000"
   },
